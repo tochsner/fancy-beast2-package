@@ -4,5 +4,6 @@
     <service type="beast.base.core.BEASTInterface">
         <provider classname="my.beast.example.MyDistribution"/>
         <provider classname="my.beast.example.MyScaleOperator"/>
+        <provider classname="my.beast.example.FancyModel"/>
     </service>
 </package>
