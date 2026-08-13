@@ -11,6 +11,12 @@ This skeleton demonstrates:
 - JUnit 5 testing with the new strongly-typed API
 - A BEAST XML file using both custom classes with `RealScalarParam` and domain constraints
 
+The repository also includes `FancyModel`, an example nucleotide substitution
+model with a hidden, never-observed fifth state. See the published one-pager
+at **https://tochsner.github.io/fancy-beast2-package/** for a description of
+the model and instructions on how to use it, and
+[`docs/index.html`](docs/index.html) for the page source.
+
 ## Prerequisites
 
 - Java 25+
