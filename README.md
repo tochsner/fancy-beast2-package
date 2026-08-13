@@ -1,21 +1,28 @@
-# BEAST 3 Package Skeleton
+# fancy-beast2-package
 
-A minimal, ready-to-build template for creating a BEAST 3 external package
-using the strongly-typed `spec` class hierarchy.
+A BEAST 3 package built around `FancyModel`, a nucleotide substitution model
+in which every substitution secretly passes through a hidden, never-observed
+fifth nucleotide `X`: direct substitutions between the four conventional
+nucleotides are impossible, and the rate between a nucleotide and `X` is
+proportional to how far apart the two letters sit in the alphabet (e.g.
+T↔X = `baseRate * 3`, since U, V and W lie between them).
 
-This skeleton demonstrates:
-- A custom scalar distribution (`MyDistribution`) extending `ScalarDistribution` — usable directly as a prior (no `Prior` wrapper)
-- A custom MCMC operator (`MyScaleOperator`) working with `RealScalarParam`
-- JPMS `module-info.java` with `provides` declarations
-- `version.xml` for package service discovery
-- JUnit 5 testing with the new strongly-typed API
-- A BEAST XML file using both custom classes with `RealScalarParam` and domain constraints
+- **Live docs:** https://tochsner.github.io/fancy-beast2-package/ — model
+  description, parameters, and BEAST XML usage instructions
+  ([source](docs/index.html))
+- **Implementation:** on the [`trial`](https://github.com/tochsner/fancy-beast2-package/tree/trial)
+  branch ([PR #1](https://github.com/tochsner/fancy-beast2-package/pull/1)) —
+  [`FancyModel.java`](https://github.com/tochsner/fancy-beast2-package/blob/trial/src/main/java/my/beast/example/FancyModel.java),
+  tests in [`FancyModelTest.java`](https://github.com/tochsner/fancy-beast2-package/blob/trial/src/test/java/my/beast/example/FancyModelTest.java),
+  and a runnable example at
+  [`testFancyModel.xml`](https://github.com/tochsner/fancy-beast2-package/blob/trial/src/test/resources/my.beast.example/examples/testFancyModel.xml)
+  — not yet merged into `main`
 
-The repository also includes `FancyModel`, an example nucleotide substitution
-model with a hidden, never-observed fifth state. See the published one-pager
-at **https://tochsner.github.io/fancy-beast2-package/** for a description of
-the model and instructions on how to use it, and
-[`docs/index.html`](docs/index.html) for the page source.
+This repository started from the BEAST 3 package skeleton template, so it
+also still carries the original example classes (`MyDistribution`,
+`MyScaleOperator`) and the generic package-development documentation below —
+useful reference if you're bootstrapping your own BEAST 3 package from this
+one, but not the point of this particular package.
 
 ## Prerequisites
 
@@ -38,7 +45,9 @@ mvn compile   # compile against beast-base
 mvn test      # run MyDistributionTest
 ```
 
-## How to customise this skeleton
+## How to customise the underlying skeleton
+
+(For bootstrapping a new BEAST 3 package from this one — not needed to work on `FancyModel` itself.)
 
 1. **Rename the Maven coordinates** in `pom.xml`:
    - Change `groupId` (should be a verified Maven Central namespace, e.g. `io.github.yourname`), `artifactId`, and `version`
