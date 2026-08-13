@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FancyModel — a BEAST 3 nucleotide substitution model</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1c1e21;
+    --muted: #5b6169;
+    --accent: #7a3ff2;
+    --accent-light: #f2ecff;
+    --code-bg: #f6f5fa;
+    --border: #e4e2ea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16151c;
+      --fg: #eceaf2;
+      --muted: #a8a4b5;
+      --accent: #b491ff;
+      --accent-light: #241f33;
+      --code-bg: #201d2b;
+      --border: #322c40;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+  }
+  main {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+  }
+  header {
+    margin-bottom: 2.5rem;
+  }
+  .kicker {
+    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+  }
+  h1 {
+    font-size: 2.2rem;
+    margin: 0.3rem 0 0.6rem;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 1.1rem;
+    margin: 0;
+  }
+  h2 {
+    font-size: 1.35rem;
+    margin-top: 2.6rem;
+    margin-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.4rem;
+  }
+  p { margin: 0.9rem 0; }
+  code {
+    background: var(--code-bg);
+    border-radius: 4px;
+    padding: 0.15em 0.4em;
+    font-size: 0.9em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    overflow-x: auto;
+    font-size: 0.85rem;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.95rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.5rem 0.7rem;
+    border-bottom: 1px solid var(--border);
+  }
+  th { color: var(--muted); font-weight: 600; }
+  ul, ol { padding-left: 1.3rem; }
+  li { margin: 0.4rem 0; }
+  .callout {
+    background: var(--accent-light);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 0.9rem 1.1rem;
+    margin: 1.2rem 0;
+    font-size: 0.95rem;
+  }
+  .formula {
+    text-align: center;
+    font-size: 1.1rem;
+    margin: 1.4rem 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  footer {
+    margin-top: 3.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="kicker">BEAST 3 package</div>
+    <h1>FancyModel</h1>
+    <p class="subtitle">A nucleotide substitution model where every substitution secretly detours through a hidden fifth state.</p>
+  </header>
+
+  <h2>What it is</h2>
+  <p>
+    <code>FancyModel</code> is a nucleotide substitution model for
+    <a href="https://www.beast2.org/">BEAST</a> phylogenetics. It assumes a fifth,
+    hidden nucleotide <code>X</code> that is never sampled or observed. Direct
+    substitutions between the four conventional nucleotides
+    (A, C, G, T) are impossible &mdash; every substitution must pass through <code>X</code> first.
+  </p>
+  <p>
+    The rate between a nucleotide and <code>X</code> is proportional to how far apart
+    the two letters sit in the English alphabet (A&hellip;Z). Concretely, the rate equals
+    <code>baseRate</code> times the number of letters strictly between them:
+  </p>
+  <div class="formula">rate(N &harr; X) = baseRate &times; |letters between N and X in A..Z|</div>
+  <p>
+    For example, T&harr;X has rate <code>baseRate &times; 3</code>, since U, V and W lie
+    between T and X in the alphabet.
+  </p>
+
+  <table>
+    <thead><tr><th>Nucleotide</th><th>Alphabet position</th><th>Letters to X (position 24)</th><th>Rate to X</th></tr></thead>
+    <tbody>
+      <tr><td>A</td><td>1</td><td>22 (B&hellip;W)</td><td>22 &times; baseRate</td></tr>
+      <tr><td>C</td><td>3</td><td>20 (D&hellip;W)</td><td>20 &times; baseRate</td></tr>
+      <tr><td>G</td><td>7</td><td>16 (H&hellip;W)</td><td>16 &times; baseRate</td></tr>
+      <tr><td>T</td><td>20</td><td>3 (U, V, W)</td><td>3 &times; baseRate</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    Because every nucleotide reaches <code>X</code> by the same symmetric mechanism,
+    the rate matrix is time-reversible with a uniform stationary distribution:
+    each of the five states (A, C, G, T, X) has equal 1/5 probability at
+    equilibrium, so among the four observable nucleotides, base frequencies are
+    fixed at a uniform 0.25 each rather than being user-specifiable.
+  </p>
+
+  <div class="callout">
+    Internally, <code>FancyModel</code> builds and eigendecomposes the full
+    5&times;5 rate matrix over (A, C, G, T, X), then returns the 4&times;4 block
+    restricted to the observable nucleotides for transition probabilities and
+    the rate matrix &mdash; the detour through X is fully accounted for within a
+    single branch's transition probability.
+  </div>
+
+  <h2>Parameters</h2>
+  <table>
+    <thead><tr><th>Input</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>baseRate</code></td>
+        <td><code>RealScalar&lt;PositiveReal&gt;</code></td>
+        <td>yes</td>
+        <td>Rate multiplier applied to the alphabet distance between a nucleotide and the hidden state X.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    <code>frequencies</code> is <em>not</em> accepted &mdash; supplying it raises an error,
+    since the rate symmetry forces a uniform equilibrium distribution.
+  </p>
+
+  <h2>Using it in a BEAST XML analysis</h2>
+  <p>
+    Wire <code>FancyModel</code> into a site model exactly as you would any other
+    nucleotide substitution model (e.g. in place of HKY or GTR):
+  </p>
+  <pre><code>&lt;input spec="my.beast.example.FancyModel" id="fancyModel"&gt;
+    &lt;baseRate idref="fancyModel.baseRate"/&gt;
+&lt;/input&gt;
+
+&lt;input spec="beast.base.spec.evolution.sitemodel.SiteModel" id="siteModel" gammaCategoryCount="1"&gt;
+    &lt;substModel idref="fancyModel"/&gt;
+&lt;/input&gt;
+
+&lt;parameter id="fancyModel.baseRate" value="1.0"
+           spec="beast.base.spec.inference.parameter.RealScalarParam"
+           domain="PositiveReal"/&gt;</code></pre>
+  <p>
+    A complete runnable example &mdash; a 6-taxon primate alignment analyzed with
+    <code>FancyModel</code> under MCMC &mdash; ships with the package at
+    <code>src/test/resources/my.beast.example/examples/testFancyModel.xml</code>.
+  </p>
+
+  <h2>Installing the package</h2>
+  <ol>
+    <li>Build the package archive with <code>./release.sh</code> (or your usual Maven build).</li>
+    <li>Install it into your BEAST packages directory, or install via the BEAST Package Manager once published.</li>
+    <li>Reference <code>my.beast.example.FancyModel</code> as the <code>substModel</code> in your BEAST XML, as shown above.</li>
+  </ol>
+
+  <h2>Source</h2>
+  <p>
+    Implementation: <code>src/main/java/my/beast/example/FancyModel.java</code>.
+    Tests: <code>src/test/java/my/beast/example/FancyModelTest.java</code>.
+    See the repository for details.
+  </p>
+
+  <footer>
+    <a href="https://github.com/tochsner/fancy-beast2-package">tochsner/fancy-beast2-package</a> &mdash; a BEAST 3 package.
+  </footer>
+</main>
+</body>
+</html>
