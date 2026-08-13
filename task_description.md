@@ -35,4 +35,18 @@ We now test the model.
   
 5min
 
-Create a PR for the changes compared to main. Create a secription outlining the model and the code changes.
+# PR
+
+Create a PR for the changes compared to main. Create a description outlining the model and the code changes.
+
+2min
+
+# Docs
+
+/goal Set up GitHub pages and publish a one-pager with a model description and instructions on how to use the model.
+
+3min
+
+Update the @README.md . Make it less generic and add a link to the website.
+
+2min
