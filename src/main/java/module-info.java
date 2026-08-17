@@ -7,5 +7,6 @@ open module my.beast.example {
 
     provides beast.base.core.BEASTInterface with
         my.beast.example.MyDistribution,
-        my.beast.example.MyScaleOperator;
+        my.beast.example.MyScaleOperator,
+        my.beast.example.CycleModel;
 }
