@@ -1,0 +1,131 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<beast version="2.8"
+       namespace="beast.core:beast.core.util:beast.evolution.alignment:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.evolution.tree.coalescent:beast.base.core:beast.base.evolution.alignment:beast.base.evolution.likelihood:beast.base.evolution.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.tree:beast.base.evolution.tree.coalescent:beast.base.inference:beast.base.inference.operator:beast.base.inference.util:beast.pkgmgmt">
+
+    <!-- The sequence alignment (same 6-taxon primate mitochondrial data as testHKY.xml)         -->
+    <!-- ntax=6 nchar=768                                                                          -->
+    <!-- npatterns=69                                                                              -->
+    <data id="alignment" dataType="nucleotide">
+        <sequence taxon="human">
+            AGAAATATGTCTGATAAAAGAGTTACTTTGATAGAGTAAATAATAGGAGCTTAAACCCCCTTATTTCTACTAGGACTATGAGAATCGAACCCATCCCTGAGAATCCAAAATTCTCCGTGCCACCTATCACACCCCATCCTAAGTAAGGTCAGCTAAATAAGCTATCGGGCCCATACCCCGAAAATGTTGGTTATACCCTTCCCGTACTAAGAAATTTAGGTTAAATACAGACCAAGAGCCTTCAAAGCCCTCAGTAAGTTG-CAATACTTAATTTCTGTAAGGACTGCAAAACCCCACTCTGCATCAACTGAACGCAAATCAGCCACTTTAATTAAGCTAAGCCCTTCTAGACCAATGGGACTTAAACCCACAAACACTTAGTTAACAGCTAAGCACCCTAATCAAC-TGGCTTCAATCTAAAGCCCCGGCAGG-TTTGAAGCTGCTTCTTCGAATTTGCAATTCAATATGAAAA-TCACCTCGGAGCTTGGTAAAAAGAGGCCTAACCCCTGTCTTTAGATTTACAGTCCAATGCTTCA-CTCAGCCATTTTACCACAAAAAAGGAAGGAATCGAACCCCCCAAAGCTGGTTTCAAGCCAACCCCATGGCCTCCATGACTTTTTCAAAAGGTATTAGAAAAACCATTTCATAACTTTGTCAAAGTTAAATTATAGGCT-AAATCCTATATATCTTA-CACTGTAAAGCTAACTTAGCATTAACCTTTTAAGTTAAAGATTAAGAGAACCAACACCTCTTTACAGTGA
+        </sequence>
+        <sequence taxon="chimp">
+            AGAAATATGTCTGATAAAAGAATTACTTTGATAGAGTAAATAATAGGAGTTCAAATCCCCTTATTTCTACTAGGACTATAAGAATCGAACTCATCCCTGAGAATCCAAAATTCTCCGTGCCACCTATCACACCCCATCCTAAGTAAGGTCAGCTAAATAAGCTATCGGGCCCATACCCCGAAAATGTTGGTTACACCCTTCCCGTACTAAGAAATTTAGGTTAAGCACAGACCAAGAGCCTTCAAAGCCCTCAGCAAGTTA-CAATACTTAATTTCTGTAAGGACTGCAAAACCCCACTCTGCATCAACTGAACGCAAATCAGCCACTTTAATTAAGCTAAGCCCTTCTAGATTAATGGGACTTAAACCCACAAACATTTAGTTAACAGCTAAACACCCTAATCAAC-TGGCTTCAATCTAAAGCCCCGGCAGG-TTTGAAGCTGCTTCTTCGAATTTGCAATTCAATATGAAAA-TCACCTCAGAGCTTGGTAAAAAGAGGCTTAACCCCTGTCTTTAGATTTACAGTCCAATGCTTCA-CTCAGCCATTTTACCACAAAAAAGGAAGGAATCGAACCCCCTAAAGCTGGTTTCAAGCCAACCCCATGACCTCCATGACTTTTTCAAAAGATATTAGAAAAACTATTTCATAACTTTGTCAAAGTTAAATTACAGGTT-AACCCCCGTATATCTTA-CACTGTAAAGCTAACCTAGCATTAACCTTTTAAGTTAAAGATTAAGAGGACCGACACCTCTTTACAGTGA
+        </sequence>
+        <sequence taxon="bonobo">
+            AGAAATATGTCTGATAAAAGAATTACTTTGATAGAGTAAATAATAGGAGTTTAAATCCCCTTATTTCTACTAGGACTATGAGAGTCGAACCCATCCCTGAGAATCCAAAATTCTCCGTGCCACCTATCACACCCCATCCTAAGTAAGGTCAGCTAAATAAGCTATCGGGCCCATACCCCGAAAATGTTGGTTATACCCTTCCCGTACTAAGAAATTTAGGTTAAACACAGACCAAGAGCCTTCAAAGCTCTCAGTAAGTTA-CAATACTTAATTTCTGTAAGGACTGCAAAACCCCACTCTGCATCAACTGAACGCAAATCAGCCACTTTAATTAAGCTAAGCCCTTCTAGATTAATGGGACTTAAACCCACAAACATTTAGTTAACAGCTAAACACCCTAATCAGC-TGGCTTCAATCTAAAGCCCCGGCAGG-TTTGAAGCTGCTTCTTTGAATTTGCAATTCAATATGAAAA-TCACCTCAGAGCTTGGTAAAAAGAGGCTTAACCCCTGTCTTTAGATTTACAGTCCAATGCTTCA-CTCAGCCATTTTACCACAAAAAAGGAAGGAATCGAACCCCCTAAAGCTGGTTTCAAGCCAACCCCATGACCCCCATGACTTTTTCAAAAGATATTAGAAAAACTATTTCATAACTTTGTCAAAGTTAAATTACAGGTT-AAACCCCGTATATCTTA-CACTGTAAAGCTAACCTAGCATTAACCTTTTAAGTTAAAGATTAAGAGGACCAACACCTCTTTACAGTGA
+        </sequence>
+        <sequence taxon="gorilla">
+            AGAAATATGTCTGATAAAAGAGTTACTTTGATAGAGTAAATAATAGAGGTTTAAACCCCCTTATTTCTACTAGGACTATGAGAATTGAACCCATCCCTGAGAATCCAAAATTCTCCGTGCCACCTGTCACACCCCATCCTAAGTAAGGTCAGCTAAATAAGCTATCGGGCCCATACCCCGAAAATGTTGGTCACATCCTTCCCGTACTAAGAAATTTAGGTTAAACATAGACCAAGAGCCTTCAAAGCCCTTAGTAAGTTA-CAACACTTAATTTCTGTAAGGACTGCAAAACCCTACTCTGCATCAACTGAACGCAAATCAGCCACTTTAATTAAGCTAAGCCCTTCTAGATCAATGGGACTCAAACCCACAAACATTTAGTTAACAGCTAAACACCCTAGTCAAC-TGGCTTCAATCTAAAGCCCCGGCAGG-TTTGAAGCTGCTTCTTCGAATTTGCAATTCAATATGAAAT-TCACCTCGGAGCTTGGTAAAAAGAGGCCCAGCCTCTGTCTTTAGATTTACAGTCCAATGCCTTA-CTCAGCCATTTTACCACAAAAAAGGAAGGAATCGAACCCCCCAAAGCTGGTTTCAAGCCAACCCCATGACCTTCATGACTTTTTCAAAAGATATTAGAAAAACTATTTCATAACTTTGTCAAGGTTAAATTACGGGTT-AAACCCCGTATATCTTA-CACTGTAAAGCTAACCTAGCGTTAACCTTTTAAGTTAAAGATTAAGAGTATCGGCACCTCTTTGCAGTGA
+        </sequence>
+        <sequence taxon="orangutan">
+            AGAAATATGTCTGACAAAAGAGTTACTTTGATAGAGTAAAAAATAGAGGTCTAAATCCCCTTATTTCTACTAGGACTATGGGAATTGAACCCACCCCTGAGAATCCAAAATTCTCCGTGCCACCCATCACACCCCATCCTAAGTAAGGTCAGCTAAATAAGCTATCGGGCCCATACCCCGAAAATGTTGGTTACACCCTTCCCGTACTAAGAAATTTAGGTTA--CACAGACCAAGAGCCTTCAAAGCCCTCAGCAAGTCA-CAGCACTTAATTTCTGTAAGGACTGCAAAACCCCACTTTGCATCAACTGAGCGCAAATCAGCCACTTTAATTAAGCTAAGCCCTCCTAGACCGATGGGACTTAAACCCACAAACATTTAGTTAACAGCTAAACACCCTAGTCAAT-TGGCTTCAGTCCAAAGCCCCGGCAGGCCTTAAAGCTGCTCCTTCGAATTTGCAATTCAACATGACAA-TCACCTCAGGGCTTGGTAAAAAGAGGTCTGACCCCTGTTCTTAGATTTACAGCCTAATGCCTTAACTCGGCCATTTTACCGCAAAAAAGGAAGGAATCGAACCTCCTAAAGCTGGTTTCAAGCCAACCCCATAACCCCCATGACTTTTTCAAAAGGTACTAGAAAAACCATTTCGTAACTTTGTCAAAGTTAAATTACAGGTC-AGACCCTGTGTATCTTA-CATTGCAAAGCTAACCTAGCATTAACCTTTTAAGTTAAAGACTAAGAGAACCAGCCTCTCTTTGCAATGA
+        </sequence>
+        <sequence taxon="siamang">
+            AGAAATACGTCTGACGAAAGAGTTACTTTGATAGAGTAAATAACAGGGGTTTAAATCCCCTTATTTCTACTAGAACCATAGGAGTCGAACCCATCCTTGAGAATCCAAAACTCTCCGTGCCACCCGTCGCACCCTGTTCTAAGTAAGGTCAGCTAAATAAGCTATCGGGCCCATACCCCGAAAATGTTGGTTATACCCTTCCCATACTAAGAAATTTAGGTTAAACACAGACCAAGAGCCTTCAAAGCCCTCAGTAAGTTAACAAAACTTAATTTCTGCAAGGGCTGCAAAACCCTACTTTGCATCAACCGAACGCAAATCAGCCACTTTAATTAAGCTAAGCCCTTCTAGATCGATGGGACTTAAACCCATAAAAATTTAGTTAACAGCTAAACACCCTAAACAACCTGGCTTCAATCTAAAGCCCCGGCAGA-GTTGAAGCTGCTTCTTTGAACTTGCAATTCAACGTGAAAAATCACTTCGGAGCTTGGCAAAAAGAGGTTTCACCTCTGTCCTTAGATTTACAGTCTAATGCTTTA-CTCAGCCACTTTACCACAAAAAAGGAAGGAATCGAACCCTCTAAAACCGGTTTCAAGCCAGCCCCATAACCTTTATGACTTTTTCAAAAGATATTAGAAAAACTATTTCATAACTTTGTCAAAGTTAAATCACAGGTCCAAACCCCGTATATCTTATCACTGTAGAGCTAGACCAGCATTAACCTTTTAAGTTAAAGACTAAGAGAACTACCGCCTCTTTACAGTGA
+        </sequence>
+    </data>
+
+    <!--
+        The CycleModel substitution model: A -> C -> G -> T -> A, non-reversible, no
+        `frequencies` input (equilibrium frequencies are derived from `rates`; supplying
+        `frequencies` here would make CycleModel.initAndValidate() throw). `spec` is fully
+        qualified because my.beast.example is not declared in the namespace above.
+    -->
+    <input spec="my.beast.example.CycleModel" id="cycleModel">
+        <rates idref="cycle.rates"/>
+    </input>
+
+    <!--
+        rates[i] = exit rate of state i, in order A, C, G, T (RealVectorParam, length 4,
+        domain PositiveReal). See beast.base.spec.inference.parameter.RealVectorParam: the
+        `value` input is a List<Double>, parsed from a space-separated attribute string, one
+        entry per dimension.
+    -->
+    <parameter id="cycle.rates" spec="beast.base.spec.inference.parameter.RealVectorParam"
+               value="1.0 1.0 1.0 1.0" domain="PositiveReal" dimension="4"/>
+
+    <!-- site model                                                              -->
+    <input spec="beast.base.spec.evolution.sitemodel.SiteModel" id="siteModel" gammaCategoryCount="1">
+        <substModel idref="cycleModel"/>
+    </input>
+
+    <input spec="beast.base.spec.evolution.likelihood.TreeLikelihood" id="treeLikelihood">
+        <data idref="alignment"/>
+        <tree idref="tree"/>
+        <siteModel idref="siteModel"/>
+    </input>
+
+    <tree id="tree"/>
+
+    <tree spec="beast.base.spec.evolution.tree.ClusterTree" id="upgmatree" clusterType="upgma" initial="@tree">
+        <taxa idref="alignment"/>
+    </tree>
+    <tree spec="beast.base.spec.evolution.tree.coalescent.RandomTree" id="coalescentSimulator" initial="@tree" taxa="@alignment">
+        <populationModel spec="beast.base.spec.evolution.tree.coalescent.ConstantPopulation">
+            <popSize value="1" spec="beast.base.spec.inference.parameter.RealScalarParam" domain="Real"/>
+        </populationModel>
+    </tree>
+
+    <run spec="MCMC" id="mcmc" chainLength="5000000" preBurnin="50000">
+
+        <init idref="coalescentSimulator"/>
+        <distribution spec="CompoundDistribution" id="posterior">
+            <!--
+                Prior on the rates: CycleModel's Q is normalised by mu = 4/sum(1/r_k), so
+                Q (and hence the likelihood) is identical for `rates` and `alpha*rates` for
+                any alpha > 0: the overall magnitude of `rates` is not identifiable from the
+                data at all. Without a proper prior pinning that magnitude, the chain would be
+                free to wander along the scale-invariant direction. IID applies a LogNormal
+                independently to each of the 4 rate elements (ScalarDistribution applied
+                element-wise via IID, since LogNormal itself is scalar-only).
+            -->
+            <distribution spec="beast.base.spec.inference.distribution.IID" id="ratesPrior" param="@cycle.rates">
+                <distr spec="beast.base.spec.inference.distribution.LogNormal">
+                    <M spec="beast.base.spec.inference.parameter.RealScalarParam" domain="Real" value="1.0"/>
+                    <S spec="beast.base.spec.inference.parameter.RealScalarParam" domain="PositiveReal" value="0.5"/>
+                </distr>
+            </distribution>
+            <distribution id="likelihood" idref="treeLikelihood"/>
+        </distribution>
+
+        <!--
+            CycleModel is scale-invariant in `rates` (see prior comment above): a plain joint
+            ScaleOperator on the whole vector multiplies every element by the same factor, which
+            leaves Qn exactly unchanged, a null move that changes the likelihood by exactly
+            zero and just lets the chain drift along the unidentifiable direction. Do NOT
+            replace this with a joint ScaleOperator on cycle.rates.
+            DeltaExchangeOperator instead moves mass between two randomly chosen elements of the
+            vector (adds +d to one, -d to the other), which changes the relative rates, the
+            only thing the likelihood can actually see, while leaving the other two rates fixed.
+        -->
+        <operator id="ratesDeltaExchange" spec="beast.base.spec.inference.operator.DeltaExchangeOperator"
+                  rvparameter="@cycle.rates" delta="0.2" weight="3"/>
+
+        <operator id="treeScaler" scaleFactor="0.5" weight="1" tree="@tree" spec="beast.base.spec.evolution.operator.ScaleTreeOperator"/>
+
+        <operator id="subtreeSlide" spec="beast.base.evolution.operator.kernel.BactrianSubtreeSlide" weight="5" size="1.0" tree="@tree"/>
+
+        <operator id="uniform" weight="10" tree="@tree" spec="beast.base.evolution.operator.Uniform"/>
+        <operator id="narrow" spec="Exchange" isNarrow="true" weight="1" tree="@tree"/>
+        <operator id="wide" spec="Exchange" isNarrow="false" weight="1" tree="@tree"/>
+        <operator id="wilsonBalding" spec="WilsonBalding" weight="1" tree="@tree"/>
+
+        <logger logEvery="10000" fileName="cyclemodel.$(seed).log">
+            <model idref="likelihood"/>
+            <log idref="likelihood"/>
+            <log idref="cycle.rates"/>
+            <log spec="beast.base.evolution.tree.TreeStatLogger" tree="@tree"/>
+        </logger>
+        <logger logEvery="10000" fileName="cyclemodel.$(seed).trees">
+            <log idref="tree"/>
+        </logger>
+        <logger logEvery="10000">
+            <model idref="likelihood"/>
+            <log idref="likelihood"/>
+            <ESS spec="beast.base.spec.inference.util.ESS" name="log" arg="@likelihood"/>
+            <log idref="cycle.rates"/>
+        </logger>
+    </run>
+
+</beast>

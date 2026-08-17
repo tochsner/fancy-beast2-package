@@ -567,4 +567,371 @@ class CycleModelTest {
                 });
         assertTrue(ex.getMessage().contains("CycleModel"), "message should name CycleModel: " + ex.getMessage());
     }
+
+    // =====================================================================
+    // PHASE 2 — implementation-specific tests, added after reading
+    // CycleModel.java and the base classes it extends. Expected values are
+    // still derived from SPEC.md section 1 (piOf/qnOf above), never read
+    // off the implementation; what's new here is the *sequence* of calls
+    // and mutations, chosen because the implementation's caching shape
+    // (visible only once the code is read) makes those sequences the ones
+    // that could expose a defect.
+    // =====================================================================
+
+    /**
+     * SPEC section 2.1 says getRateMatrix(Node) must run
+     * setupRelativeRates()/setupRateMatrix() "when updateMatrix is set...
+     * before delegating to super.getRateMatrix(node)" -- mirroring
+     * getEigenDecomposition's synchronized block. CycleModel.java:116-124
+     * does that refresh but deliberately never clears updateMatrix itself
+     * (only getTransitionProbabilities/getEigenDecomposition do, per the
+     * inherited contract). This test drives every call ordering named by
+     * the coordinator and checks getRateMatrix is never stale relative to
+     * an independent re-derivation from the rates currently in ratesInput.
+     */
+    @Test
+    void getRateMatrix_neverStale_acrossCallOrderings() {
+        double[] ratesA = {1, 2, 3, 4};
+        double[] ratesB = {5, 1, 2, 7};
+
+        // Ordering 1: getTransitionProbabilities first, then mutate + doUpdate,
+        // then getRateMatrix. This is the exact "operator changes the rates
+        // mid-run" scenario: doUpdate() is the public equivalent of what
+        // requiresRecalculation() does when the BEAST State machinery detects
+        // the rates parameter is dirty (CalculationNode.checkDirtiness() ->
+        // requiresRecalculation(), which just sets updateMatrix = true).
+        {
+            RealVectorParam<PositiveReal> rates =
+                    new RealVectorParam<>(ratesA.clone(), PositiveReal.INSTANCE);
+            CycleModel m = new CycleModel();
+            m.initByName("rates", rates);
+
+            P(m, 0.3); // settles rateMatrix/relativeRates/eigenDecomposition for ratesA, updateMatrix=false
+
+            for (int i = 0; i < 4; i++) {
+                rates.set(i, ratesB[i]);
+            }
+            m.doUpdate(); // simulate requiresRecalculation() being triggered by the framework
+
+            double[] q = m.getRateMatrix(null);
+            double[] expectedQ = qnOf(ratesB);
+            for (int k = 0; k < 16; k++) {
+                assertEquals(expectedQ[k], q[k], 1e-10, "index " + k);
+            }
+        }
+
+        // Ordering 2: getRateMatrix first (refreshes rateMatrix, leaves
+        // updateMatrix true per the implementation), then
+        // getTransitionProbabilities. Because updateMatrix is left true,
+        // getTransitionProbabilities must still see it and rebuild the
+        // eigendecomposition from the *current* (already-fresh) rateMatrix,
+        // rather than skip the rebuild and use a stale/absent eigendecomposition.
+        {
+            CycleModel m = model(ratesA);
+            double[] q = m.getRateMatrix(null); // updateMatrix was true (post-init); refreshed, but left true
+            double[] expectedQ = qnOf(ratesA);
+            for (int k = 0; k < 16; k++) {
+                assertEquals(expectedQ[k], q[k], 1e-10, "getRateMatrix index " + k);
+            }
+            double[] p = P(m, 0.1);
+            // ratesA = (1,2,3,4) = Example C; reuse its tabulated P(0.1) from section 3.
+            double[] expectedP = {
+                    0.949256323353, 0.048174722166, 0.002444876447, 0.000124078034,
+                    0.000496312136, 0.901081601187, 0.091459691439, 0.006962395238,
+                    0.014172946544, 0.000248156068, 0.855351755467, 0.130227141921,
+                    0.183084820257, 0.004807034204, 0.000165437379, 0.811942708160
+            };
+            for (int k = 0; k < 16; k++) {
+                assertEquals(expectedP[k], p[k], TOL, "P index " + k);
+            }
+        }
+
+        // Ordering 3: getRateMatrix, then mutate + doUpdate, then getRateMatrix
+        // again -- two refreshes in a row through the same code path, no
+        // getTransitionProbabilities call in between (so updateMatrix is never
+        // cleared by anyone). Confirms getRateMatrix keeps tracking every change.
+        {
+            RealVectorParam<PositiveReal> rates =
+                    new RealVectorParam<>(ratesA.clone(), PositiveReal.INSTANCE);
+            CycleModel m = new CycleModel();
+            m.initByName("rates", rates);
+
+            double[] q1 = m.getRateMatrix(null);
+            double[] expectedQ1 = qnOf(ratesA);
+            for (int k = 0; k < 16; k++) {
+                assertEquals(expectedQ1[k], q1[k], 1e-10, "first getRateMatrix index " + k);
+            }
+
+            for (int i = 0; i < 4; i++) {
+                rates.set(i, ratesB[i]);
+            }
+            m.doUpdate();
+
+            double[] q2 = m.getRateMatrix(null);
+            double[] expectedQ2 = qnOf(ratesB);
+            for (int k = 0; k < 16; k++) {
+                assertEquals(expectedQ2[k], q2[k], 1e-10, "second getRateMatrix index " + k);
+            }
+        }
+    }
+
+    /**
+     * The scenario the coordinator flagged as most important: does
+     * store()/restore() round-trip CycleModel correctly under a REJECTED
+     * MCMC move?
+     *
+     * Expected behaviour, derived from the BEAST CalculationNode contract
+     * (not from running the code): store() is called before a proposal,
+     * snapshotting updateMatrix and a *copy* of eigenDecomposition
+     * (BasicGeneralSubstitutionModel.java:248-257). The operator then
+     * mutates the rates parameter (its own store()/restore() round-trip its
+     * values array via startEditing()/restore()). If the move is rejected,
+     * restore() swaps eigenDecomposition back and resets updateMatrix to
+     * its pre-proposal value (BasicGeneralSubstitutionModel.java:262-278).
+     * Critically, the relativeRates array-swap is COMMENTED OUT there, and
+     * rateMatrix is never swapped or copied by store()/restore() at all --
+     * only eigenDecomposition is. So after a rejected move:
+     *   - getFrequencies() must be correct (recomputed live from ratesInput,
+     *     which the parameter's own restore() has correctly rolled back).
+     *   - getTransitionProbabilities()/P(t) must be correct, because it is
+     *     driven entirely by the (correctly swapped-back) eigenDecomposition
+     *     as long as updateMatrix stays false.
+     *   - getRateMatrix(Node) is the one at risk: CycleModel.java:116-124
+     *     only refreshes rateMatrix when updateMatrix is true. After a
+     *     rejected move updateMatrix is restored to false (it was false
+     *     before the proposal, since it had already been cleared by an
+     *     earlier getTransitionProbabilities call) -- so getRateMatrix
+     *     skips the refresh and flattens whatever is sitting in the raw
+     *     `rateMatrix` field. That field was last written for the REJECTED
+     *     rates and was never rolled back by restore(). So it should show
+     *     the rejected rates' Q, not the restored rates' Q -- a real,
+     *     spec-observable inconsistency between getRateMatrix and
+     *     getFrequencies()/getTransitionProbabilities() after a rejected move.
+     */
+    @Test
+    void storeRestore_rejectedMove_getRateMatrixGoesStale() {
+        double[] acceptedRates = {1, 2, 3, 4};
+        double[] rejectedRates = {100, 2, 3, 4};
+
+        RealVectorParam<PositiveReal> rates =
+                new RealVectorParam<>(acceptedRates.clone(), PositiveReal.INSTANCE);
+        CycleModel m = new CycleModel();
+        m.initByName("rates", rates);
+
+        // Settle the model under the accepted rates (as if a previous
+        // iteration's likelihood evaluation already ran).
+        P(m, 0.1);
+
+        // state.store() before the operator proposes a move.
+        m.store();
+
+        // Operator changes the rates (this internally calls the parameter's
+        // own store(), snapshotting acceptedRates as its storedValues).
+        for (int i = 0; i < 4; i++) {
+            rates.set(i, rejectedRates[i]);
+        }
+        m.doUpdate(); // simulate the framework marking the model dirty
+
+        // Likelihood evaluation under the proposed (rejected-to-be) rates:
+        // both getTransitionProbabilities and getRateMatrix get exercised,
+        // exactly as a real TreeLikelihood + logger/diagnostic call would.
+        P(m, 0.1);
+        m.getRateMatrix(null);
+
+        // Move REJECTED: framework rolls back the parameter, then the model.
+        rates.restore();
+        m.restore();
+
+        // The rates parameter itself is correctly rolled back.
+        assertEquals(1.0, rates.get(0), 0.0);
+
+        // getFrequencies() is always correct: it is recomputed live from
+        // ratesInput on every call (CycleModel.java:75-84), never cached.
+        double[] expectedPi = piOf(acceptedRates);
+        double[] actualPi = m.getFrequencies();
+        for (int i = 0; i < 4; i++) {
+            assertEquals(expectedPi[i], actualPi[i], 1e-12, "pi[" + i + "]");
+        }
+
+        // getTransitionProbabilities is correct: it is driven by the
+        // correctly-restored eigenDecomposition (updateMatrix is false, so
+        // no further recompute happens, and the swap in restore() put the
+        // pre-proposal eigendecomposition back).
+        double[] p = P(m, 0.1);
+        double[] expectedP = {
+                0.949256323353, 0.048174722166, 0.002444876447, 0.000124078034,
+                0.000496312136, 0.901081601187, 0.091459691439, 0.006962395238,
+                0.014172946544, 0.000248156068, 0.855351755467, 0.130227141921,
+                0.183084820257, 0.004807034204, 0.000165437379, 0.811942708160
+        };
+        for (int k = 0; k < 16; k++) {
+            assertEquals(expectedP[k], p[k], TOL, "P(t) index " + k);
+        }
+
+        // getRateMatrix(Node): the actually-defective call. It should equal
+        // qnOf(acceptedRates) -- the rates the model is back to according to
+        // both getFrequencies() and getTransitionProbabilities() above.
+        double[] q = m.getRateMatrix(null);
+        double[] expectedQAccepted = qnOf(acceptedRates);
+        double[] rejectedQ = qnOf(rejectedRates);
+
+        boolean matchesAccepted = true;
+        boolean matchesRejected = true;
+        for (int k = 0; k < 16; k++) {
+            if (Math.abs(q[k] - expectedQAccepted[k]) > 1e-10) matchesAccepted = false;
+            if (Math.abs(q[k] - rejectedQ[k]) > 1e-10) matchesRejected = false;
+        }
+        assertTrue(matchesAccepted,
+                "BUG: after a rejected move, getRateMatrix(node) does not match the "
+                        + "restored (accepted) rates' Q; it currently returns the rejected "
+                        + "proposal's Q instead (matchesRejected=" + matchesRejected + "). "
+                        + "See CycleModel.java:116-124 and BasicGeneralSubstitutionModel.java:248-278 "
+                        + "(relativeRates swap commented out; rateMatrix never restored).");
+    }
+
+    /**
+     * getFrequencies() must never alias a shared array (SPEC.md 2.1: "return
+     * a fresh double[4]"). Mutate one caller's copy and confirm a second call
+     * is unaffected.
+     */
+    @Test
+    void getFrequencies_returnsFreshArray_noAliasing() {
+        CycleModel m = model(1, 2, 3, 4);
+        double[] first = m.getFrequencies();
+        first[0] = -999.0;
+        double[] second = m.getFrequencies();
+        assertEquals(0.48, second[0], 1e-12,
+                "getFrequencies() must return a fresh array each call, not a shared/cached one");
+    }
+
+    /**
+     * getFrequencies() must track a rates change immediately, with no
+     * updateMatrix/doUpdate() dance required -- SPEC.md 2.1 says
+     * TreeLikelihood reads it for the root "without going through
+     * updateMatrix" (TreeLikelihood.java:532). Mutate rates directly (no
+     * doUpdate() call at all) and confirm getFrequencies() reflects it on
+     * the very next call.
+     */
+    @Test
+    void getFrequencies_tracksRatesChange_withoutDoUpdate() {
+        RealVectorParam<PositiveReal> rates =
+                new RealVectorParam<>(new double[]{1, 1, 1, 1}, PositiveReal.INSTANCE);
+        CycleModel m = new CycleModel();
+        m.initByName("rates", rates);
+
+        double[] before = m.getFrequencies();
+        for (int i = 0; i < 4; i++) {
+            assertEquals(0.25, before[i], 1e-12);
+        }
+
+        rates.set(0, 100.0); // no doUpdate() call
+
+        double[] after = m.getFrequencies();
+        double[] expected = piOf(new double[]{100, 1, 1, 1});
+        for (int i = 0; i < 4; i++) {
+            assertEquals(expected[i], after[i], 1e-12, "pi[" + i + "] should track the rate change immediately");
+        }
+    }
+
+    /**
+     * SPEC.md 2.1's table for setupRelativeRates() (indices 0, 4, 8, 9)
+     * matches BasicGeneralSubstitutionModel.setupRateMatrix's own
+     * skip-diagonal indexing (index = i*3 + (j<i ? j : j-1) for n=4):
+     * (0,1)->0, (1,2)->4, (2,3)->8, (3,0)->9 -- verified by hand above the
+     * getRelativeRates() call. This test checks getRelativeRates() agrees
+     * with getRateMatrix() for the four populated slots and is exactly
+     * zero everywhere else.
+     */
+    @Test
+    void getRelativeRates_matchesRateMatrix_atSpecdIndices() {
+        for (double[] rates : RATE_SETS) {
+            CycleModel m = model(rates);
+            double[] q = m.getRateMatrix(null);
+            double[] rr = m.getRelativeRates();
+            assertEquals(12, rr.length, "relativeRates length should be n*(n-1) = 12");
+
+            assertEquals(q[0 * 4 + 1], rr[0], 1e-12, "A->C");
+            assertEquals(q[1 * 4 + 2], rr[4], 1e-12, "C->G");
+            assertEquals(q[2 * 4 + 3], rr[8], 1e-12, "G->T");
+            assertEquals(q[3 * 4 + 0], rr[9], 1e-12, "T->A");
+
+            for (int idx = 0; idx < 12; idx++) {
+                if (idx == 0 || idx == 4 || idx == 8 || idx == 9) continue;
+                assertEquals(0.0, rr[idx], 0.0, "relativeRates[" + idx + "] should be exactly 0");
+            }
+        }
+    }
+
+    /**
+     * Numerical-edge probe: a large rate ratio (1e6:1). Structural invariants
+     * (row sums to 0, flux balance pi_i*r_i = 1/4, P(t) rows sum to 1,
+     * stationarity) must still hold, though at what tolerance is itself the
+     * finding -- report exactly how far off the model is, don't just pick
+     * a tolerance that happens to pass.
+     */
+    @Test
+    void largeRateRatio_structuralInvariantsHold() {
+        double[] rates = {1, 1e6, 1, 1e6};
+        CycleModel m = model(rates);
+
+        double[] q = m.getRateMatrix(null);
+        for (int i = 0; i < 4; i++) {
+            double rowSum = 0.0;
+            for (int j = 0; j < 4; j++) rowSum += q[i * 4 + j];
+            assertEquals(0.0, rowSum, 1e-6, "row " + i + " sum, large-ratio rates");
+        }
+
+        double[] pi = m.getFrequencies();
+        for (int i = 0; i < 4; i++) {
+            assertEquals(0.25, pi[i] * (-q[i * 4 + i]), 1e-6, "flux balance state " + i);
+        }
+
+        for (double t : new double[]{0.01, 1.0}) {
+            double[] p = P(m, t);
+            for (int i = 0; i < 4; i++) {
+                double rowSum = 0.0;
+                for (int j = 0; j < 4; j++) {
+                    assertTrue(p[i * 4 + j] >= 0, "P(t)[" + i + "][" + j + "] should be >= 0, t=" + t);
+                    rowSum += p[i * 4 + j];
+                }
+                assertEquals(1.0, rowSum, 1e-6, "row " + i + " sums to 1 at t=" + t);
+            }
+        }
+    }
+
+    /**
+     * Numerical-edge probe: near-equal (nearly degenerate) rates, close to
+     * but not exactly Example A. Checks the complex-eigenvalue path doesn't
+     * degrade for rates that are close to producing repeated/near-repeated
+     * eigenvalue structure.
+     */
+    @Test
+    void nearEqualRates_structuralInvariantsHold() {
+        double[] rates = {1.0, 1.0 + 1e-8, 1.0 - 1e-8, 1.0 + 2e-8};
+        CycleModel m = model(rates);
+
+        double[] pi = m.getFrequencies();
+        double[] expectedPi = piOf(rates);
+        for (int i = 0; i < 4; i++) {
+            assertEquals(expectedPi[i], pi[i], 1e-9, "pi[" + i + "]");
+        }
+
+        double[] p = P(m, 0.5);
+        for (int i = 0; i < 4; i++) {
+            double rowSum = 0.0;
+            for (int j = 0; j < 4; j++) {
+                assertTrue(p[i * 4 + j] > 0, "P(t)[" + i + "][" + j + "] should be > 0");
+                rowSum += p[i * 4 + j];
+            }
+            assertEquals(1.0, rowSum, 1e-9, "row " + i + " sums to 1");
+        }
+
+        // Should be close to Example A's P(0.5) since rates are close to (1,1,1,1).
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                assertEquals(exampleAClosedForm(i, j, 0.5), p[i * 4 + j], 1e-6,
+                        "near-degenerate rates should be close to Example A at i=" + i + " j=" + j);
+            }
+        }
+    }
 }

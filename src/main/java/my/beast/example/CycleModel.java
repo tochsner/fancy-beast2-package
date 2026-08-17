@@ -114,11 +114,16 @@ public class CycleModel extends BasicComplexSubstitutionModel {
 
     @Override
     public double[] getRateMatrix(Node node) {
+        // Recompute unconditionally, not gated on updateMatrix: store()/restore() never
+        // roll back rateMatrix (only updateMatrix is saved, and the relativeRates swap in
+        // BasicGeneralSubstitutionModel is commented out), so after a rejected MCMC move
+        // restore() can leave updateMatrix false while rateMatrix still holds the rejected
+        // proposal's Q. A gated refresh would then go stale. Recomputing here is cheap and
+        // idempotent, and updateMatrix is left untouched so getTransitionProbabilities()/
+        // getEigenDecomposition() still rebuild as before.
         synchronized (this) {
-            if (updateMatrix) {
-                setupRelativeRates();
-                setupRateMatrix();
-            }
+            setupRelativeRates();
+            setupRateMatrix();
         }
         return super.getRateMatrix(node);
     }
