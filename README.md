@@ -1,24 +1,45 @@
-# BEAST 3 Package Skeleton
+# CycleModel — a cyclic nucleotide substitution model for BEAST 3
 
-A minimal, ready-to-build template for creating a BEAST 3 external package
-using the strongly-typed `spec` class hierarchy.
+📖 **[Full documentation and usage guide →](https://niconeureiter.github.io/fancy-beast2-package/)**
 
-This skeleton demonstrates:
-- A custom scalar distribution (`MyDistribution`) extending `ScalarDistribution` — usable directly as a prior (no `Prior` wrapper)
-- A custom MCMC operator (`MyScaleOperator`) working with `RealScalarParam`
-- JPMS `module-info.java` with `provides` declarations
-- `version.xml` for package service discovery
-- JUnit 5 testing with the new strongly-typed API
-- A BEAST XML file using both custom classes with `RealScalarParam` and domain constraints
+A BEAST 3 package providing `CycleModel`, a nucleotide substitution model in which a substitution
+can only ever *increment* the state, wrapping around from T back to A:
+
+```
+  A -> C -> G -> T -> A
+```
+
+Nothing else is possible — no going backwards, no skipping ahead. Which substitution happens next
+is fully determined by the current state; only the waiting time is random. The model takes one
+input, `rates`, where `rates[i]` is the rate of the single substitution leaving state `i`.
+
+Two properties make it unusual among BEAST substitution models:
+
+- **It derives its own equilibrium frequencies.** Flux balance around the ring gives
+  `π_i ∝ 1/r_i`, so there is no `frequencies` input — supplying one is an error.
+- **It is non-reversible**, and its eigenvalues are complex in general. It therefore extends
+  `BasicComplexSubstitutionModel` rather than the usual `BasicGeneralSubstitutionModel`, and it
+  gives the model a direction in time: unlike a reversible model, the likelihood depends on where
+  the root is.
+
+The [documentation site](https://niconeureiter.github.io/fancy-beast2-package/) covers the maths,
+installation, XML usage, worked examples, and — importantly — which MCMC operators are and are not
+appropriate for this model.
+
+This package targets **BEAST 2.8 / BEAST 3** and the new strongly-typed `beast.base.spec` API
+(despite the repository name).
 
 ## Prerequisites
 
 - Java 25+
 - Maven 3.9+
 
-BEAST 3 artifacts are resolved from [Maven Central](https://central.sonatype.com/namespace/io.github.compevol) — no extra configuration needed.
+BEAST 3 artifacts resolve from [Maven Central](https://central.sonatype.com/namespace/io.github.compevol),
+so no extra configuration is needed.
 
-If you want to develop against an unreleased SNAPSHOT version of BEAST 3, you can either add the GitHub Packages repository to your `pom.xml` (requires a [personal access token](https://github.com/settings/tokens) with `read:packages` scope in `~/.m2/settings.xml`), or install BEAST 3 to your local Maven repository from source:
+To develop against an unreleased SNAPSHOT of BEAST 3, either add the GitHub Packages repository to
+`pom.xml` (requires a [personal access token](https://github.com/settings/tokens) with
+`read:packages` in `~/.m2/settings.xml`), or install BEAST 3 from source:
 
 ```bash
 cd /path/to/beast3
@@ -28,258 +49,139 @@ mvn install -DskipTests
 ## Build and test
 
 ```bash
-mvn compile   # compile against beast-base
-mvn test      # run MyDistributionTest
+mvn compile
+mvn test      # 35 tests
+mvn package   # -> target/MyPackage.v1.0.0.zip
 ```
 
-## How to customise this skeleton
+## Run the example analysis
 
-1. **Rename the Maven coordinates** in `pom.xml`:
-   - Change `groupId` (should be a verified Maven Central namespace, e.g. `io.github.yourname`), `artifactId`, and `version`
-   - Update `<url>`, `<developers>`, and `<scm>` to point to your repository
+`src/test/resources/my.beast.example/examples/cyclemodel.xml` applies `CycleModel` to the same
+6-taxon primate mitochondrial alignment as BEAST's own `testHKY.xml`, so the two are directly
+comparable:
 
-2. **Rename the Java module** in `src/main/java/module-info.java`:
-   - Change `module my.beast.example` to your module name
-   - Update `exports` and `provides` declarations
+```bash
+mvn exec:exec -Dbeast.args="src/test/resources/my.beast.example/examples/cyclemodel.xml"
+```
 
-3. **Rename the Java package** under `src/main/java/`:
-   - Move source files to your package directory
-   - Update `package` statements in all `.java` files
+To launch BEAUti with the package on the module path:
 
-4. **Update `version.xml`**:
-   - Change the package `name` and `version`
-   - List your `BEASTInterface` providers
+```bash
+mvn exec:exec -Dbeast.module=beast.fx -Dbeast.main=beastfx.app.beauti.Beauti
+```
 
-5. **Replace the example classes** with your own:
-   - See `MyDistribution.java` for the `ScalarDistribution` pattern
-   - See `MyScaleOperator.java` for the `Operator` + `RealScalarParam` pattern
+## Using it in an XML
 
-6. **Update `src/assembly/beast-package.xml`**:
-   - This file controls what goes into the BEAST package ZIP (built by `release.sh`)
-   - Update the `<includes>` to match your Maven `groupId:artifactId`
-   - Update the `<fileSets>` paths to match your module name (replace `my.beast.example` with your JPMS module name)
-   - Add `<include>` lines for any third-party runtime dependencies your package needs
+`CycleModel` is not in a default namespace, so give the fully qualified `spec`:
+
+```xml
+<input spec="my.beast.example.CycleModel" id="cycleModel">
+    <rates idref="cycle.rates"/>
+</input>
+
+<parameter id="cycle.rates"
+           spec="beast.base.spec.inference.parameter.RealVectorParam"
+           value="1.0 1.0 1.0 1.0" domain="PositiveReal" dimension="4"/>
+```
+
+**Do not add a `<frequencies>` block.** If you are adapting an HKY or GTR analysis, delete it
+rather than editing it — `CycleModel` derives frequencies from the rates and throws if given any.
+
+**Do not use a joint `ScaleOperator` on `rates`.** The rate matrix is normalised, so scaling all
+four rates together leaves it exactly unchanged — a likelihood-null move. Use
+`DeltaExchangeOperator` instead. The [documentation site](https://niconeureiter.github.io/fancy-beast2-package/#choosing-an-operator-for-rates)
+explains why in full.
+
+## Layout
+
+```
+src/main/java/module-info.java              JPMS module my.beast.example; every model class must
+                                            be listed under `provides ... BEASTInterface`
+src/main/java/my/beast/example/             CycleModel, plus MyDistribution and MyScaleOperator
+                                            (template examples, kept as reference)
+src/test/java/my/beast/example/             JUnit 5 tests
+src/test/resources/my.beast.example/examples/   runnable BEAST XML
+src/assembly/beast-package.xml              what goes into the package ZIP
+docs/                                       the GitHub Pages site
+version.xml                                 package name/version + BEASTInterface providers
+```
+
+A new class is invisible to BEAST unless it is registered in **both** `module-info.java`
+(`provides`) and `version.xml` (`<provider>`).
 
 ## Key concepts (new spec API)
 
-| Old (deprecated)                    | New (spec)                           |
-|-------------------------------------|--------------------------------------|
-| `RealParameter`                     | `RealScalarParam<D>` / `RealVectorParam<D>` |
-| `ParametricDistribution`            | `ScalarDistribution<S, T>`           |
+| Old (deprecated)                           | New (spec)                                              |
+|--------------------------------------------|---------------------------------------------------------|
+| `RealParameter`                            | `RealScalarParam<D>` / `RealVectorParam<D>`             |
+| `ParametricDistribution`                   | `ScalarDistribution<S, T>`                              |
 | `Prior` wrapper + `ParametricDistribution` | Distribution with `param` input (acts as its own prior) |
-| `lower`/`upper` bounds              | Domain types: `Real`, `PositiveReal`, `NonNegativeReal`, `UnitInterval` |
+| `lower`/`upper` bounds                     | Domain types: `Real`, `PositiveReal`, `NonNegativeReal`, `UnitInterval` |
 
-## Adding GUI (BEAUti) support
+Bounds live in the domain type — `RealVector<PositiveReal>` — not in `lower`/`upper` inputs.
 
-If your package includes BEAUti input editors, alignment providers, or other
-GUI components, you have two options for how to organise them.
+## Releasing
 
-### Option A: single module (recommended for most packages)
-
-Keep everything in one Maven artifact and one JPMS module. Use `requires static`
-so the module loads without JavaFX on the module path (headless/cluster runs):
-
-Add the dependency to `pom.xml`:
-
-```xml
-<dependency>
-    <groupId>io.github.compevol</groupId>
-    <artifactId>beast-fx</artifactId>
-    <version>${beast.version}</version>
-</dependency>
-```
-
-In `module-info.java`, declare the GUI dependencies as **static** (compile-time only):
-
-```java
-open module my.beast.example {
-    requires beast.pkgmgmt;
-    requires beast.base;
-    requires static beast.fx;         // optional at runtime
-    requires static javafx.controls;  // optional at runtime
-
-    exports my.beast.example;
-    exports my.beast.example.app.beauti;  // GUI classes
-
-    provides beast.base.core.BEASTInterface with
-        my.beast.example.MyDistribution,
-        my.beast.example.MyScaleOperator,
-        my.beast.example.app.beauti.MyAlignmentProvider;
-}
-```
-
-**Convention:** place GUI classes in a `*.app.beauti` subpackage to keep them
-separate from core logic.
-
-When running headless (no beast-fx on the module path), the module loads normally.
-BEAUti provider classes are registered by name but never instantiated, so the
-missing GUI dependencies cause no errors. When running with BEAUti, everything
-works as expected.
-
-### Option B: two modules (core + fx)
-
-Split into a parent POM with two submodules: one for core logic and one for GUI.
-This is the pattern used by beast3 itself (`beast-base` + `beast-fx`) and by
-[morph-models](https://github.com/CompEvol/morph-models).
-
-Use this when your package has substantial GUI code (multiple custom input
-editors, complex BEAUti panels) that warrants its own module.
-
-```
-my-package/
-    pom.xml                    (parent, packaging: pom)
-    beast-my-package/          (core module)
-        pom.xml
-        src/main/java/module-info.java
-    beast-my-package-fx/       (GUI module, depends on core)
-        pom.xml
-        src/main/java/module-info.java
-```
-
-The core module has no JavaFX dependency at all. The fx module declares
-`requires beast.fx;` and `requires javafx.controls;` as regular (non-static)
-dependencies.
-
-**Trade-off:** cleaner separation, but doubles the number of Eclipse/IDE projects.
-For most packages where the GUI code is one or two classes, Option A is simpler.
-
-## Releasing your package
-
-The included `release.sh` script automates the full release process: build, package, and
-optionally create a GitHub release.
-
-### 1. Build the package ZIP
+`release.sh` automates build and packaging:
 
 ```bash
-./release.sh
+./release.sh              # build MyPackage.v1.0.0.zip
+./release.sh --release    # additionally create a GitHub release with the ZIP attached
 ```
 
-This will:
-- Read the package name and version from `version.xml`
-- Run `mvn clean package -DskipTests`
-- Assemble a BEAST package ZIP with the correct flat structure
-- Output a file like `MyPackage.v1.0.0.zip`
-
-**Linux/Ubuntu users:** if `./release.sh` fails with errors about `\r` characters, your
-git checkout may have converted line endings to CRLF. Fix with:
+**Linux/Ubuntu:** if the script fails on `\r` characters, your checkout converted line endings to
+CRLF. Run it as `bash release.sh`, or strip them:
 
 ```bash
-tr -d '\r' < release.sh > release_fixed.sh && mv release_fixed.sh release.sh
-chmod +x release.sh
+tr -d '\r' < release.sh > release_fixed.sh && mv release_fixed.sh release.sh && chmod +x release.sh
 ```
 
-Or run the script explicitly with bash: `bash release.sh`
-
-### 2. Create a GitHub release
+### Local install
 
 ```bash
-./release.sh --release
+PKG_DIR=~/.beast/2.8/MyPackage        # macOS and Linux
+# Windows: %USERPROFILE%\.beast\2.8\MyPackage
+
+mkdir -p "$PKG_DIR"
+unzip -o MyPackage.v1.0.0.zip -d "$PKG_DIR"
+packagemanager -list                  # verify
 ```
 
-This additionally creates a GitHub release (e.g. `v1.0.0`) with the ZIP attached,
-and prints the CBAN XML entry you'll need for the next step.
+The ZIP must be **flat** — `version.xml`, `lib/`, and optionally `examples/` and `fxtemplates/` at
+the top level, with no wrapper directory named after the package. The Package Manager extracts
+into its own directory, so a wrapper would double-nest and break service discovery.
 
-### 3. Submit to CBAN
+### Submit to CBAN
 
-The [CBAN repository](https://github.com/CompEvol/CBAN) is where BEAST's Package
-Manager discovers available packages. To make your package installable:
-
-1. Fork [CompEvol/CBAN](https://github.com/CompEvol/CBAN)
-2. Add your package entry to `packages2.8.xml` (the `--release` flag prints this for you):
+[CBAN](https://github.com/CompEvol/CBAN) is where BEAST's Package Manager discovers packages. Fork
+it, add an entry to `packages2.8.xml` (`./release.sh --release` prints this for you), and open a
+pull request:
 
 ```xml
 <package name="MyPackage" version="1.0.0"
     url="https://github.com/YOU/YOUR-REPO/releases/download/v1.0.0/MyPackage.v1.0.0.zip"
     projectURL="https://github.com/YOU/YOUR-REPO"
-    description="One-line description of your package">
+    description="Cyclic non-reversible nucleotide substitution model">
     <depends on="BEAST.base" atleast="2.8.0"/>
 </package>
 ```
 
-3. Open a pull request against CompEvol/CBAN
+### Maven Central
 
-Once merged, your package will appear in the BEAST Package Manager.
-
-### 4. Local testing
-
-To test your package locally before releasing, install the built ZIP into BEAST's
-package directory:
-
-```bash
-# Build the ZIP
-./release.sh
-
-# Install to the local BEAST package directory
-PKG=MyPackage                          # your package name from version.xml
-BEAST_PKG_DIR=~/.beast/2.8/$PKG       # macOS and Linux
-# Windows: %USERPROFILE%\.beast\2.8\MyPackage
-
-mkdir -p "$BEAST_PKG_DIR"
-unzip -o "$PKG.v1.0.0.zip" -d "$BEAST_PKG_DIR"
-```
-
-After installation, BEAST/BEAUti will discover the package on next launch. You can
-verify with:
-
-```bash
-packagemanager -list
-```
-
-## Publishing to Maven Central
-
-BEAST 3 can also install packages directly from Maven Central. This is an
-alternative (or complement) to the ZIP/CBAN distribution above.
-
-The recommended path is to publish automatically via GitHub Actions on a
-`v*` tag push. For a full step-by-step setup guide (Sonatype account,
-namespace verification, GPG key, repo secrets, the `ci-publish.yml`
-workflow, troubleshooting), see
-[**`package-release-setup.md`**](https://github.com/CompEvol/beast3/blob/master/scripts/package-release-setup.md)
-in the beast3 repo.
-
-### Quick local deploy (manual alternative)
-
-If you've already configured `~/.m2/settings.xml` with a `central` server
-entry and have GPG set up locally, you can deploy from your machine:
+BEAST 3 can also install packages straight from Maven Central. The recommended path is to publish
+via GitHub Actions on a `v*` tag; see
+[`package-release-setup.md`](https://github.com/CompEvol/beast3/blob/master/scripts/package-release-setup.md)
+for the full setup. To deploy manually, with a `central` server entry in `~/.m2/settings.xml` and
+GPG configured:
 
 ```bash
 mvn clean deploy -Prelease
 ```
 
-This builds the JAR (with `version.xml` embedded), generates sources and javadoc
-JARs, signs everything with GPG, and uploads to Maven Central.
-
-### User install
-
-Once published, BEAST 3 users can install your package with:
-
-```
-Package Manager > Install from Maven > groupId:artifactId:version
-```
-
-Or from the command line:
-
-```bash
-packagemanager -maven groupId:artifactId:version
-```
-
-### ZIP structure
-
-The BEAST Package Manager expects a flat ZIP (no wrapper directory) containing:
-
-```
-version.xml            # required — package name, version, service providers
-lib/                   # required — your JARs (and any third-party runtime deps)
-fxtemplates/           # optional — BEAUti templates
-examples/              # optional — example BEAST XML files and data
-```
-
-**Important:** the ZIP must NOT contain a top-level directory named after your package.
-The Package Manager extracts the ZIP into its own directory, so a wrapper would
-cause double-nesting and break service discovery.
+Users then install with `packagemanager -maven groupId:artifactId:version`.
 
 ## Further reading
 
+- [CycleModel documentation](https://niconeureiter.github.io/fancy-beast2-package/)
 - [BEAST 3 source](https://github.com/CompEvol/beast3)
 - [BEAST 2 → 3 migration guide](https://github.com/CompEvol/beast3/blob/master/scripts/migration-guide.md)
-- [morph-models](https://github.com/CompEvol/morph-models) — worked example of a two-module (core + fx) BEAST 3 package (Option B)
