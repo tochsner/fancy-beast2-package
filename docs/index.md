@@ -1,3 +1,8 @@
+---
+title: CycleModel
+description: A cyclic, non-reversible nucleotide substitution model for BEAST 3
+---
+
 ## What it is
 
 `CycleModel` is a nucleotide substitution model in which a substitution can only ever
