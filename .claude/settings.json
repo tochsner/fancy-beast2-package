@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "../beast3",
+      "../plan"
+    ],
+    "allow": [
+      "Read", "Glob", "Grep",
+      "Bash(mvn -o compile)",
+      "Bash(mvn -o test:*)",
+      "Bash(mvn -o test *)",
+      "Bash(mvn -o package)",
+      "Bash(mvn -o exec:exec:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Edit(src/**)",
+      "Edit(version.xml)",
+      "Edit(../plan/**)"
+    ],
+
+    "ask": [
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git checkout:*)",
+      "Bash(gh:*)",
+      "Edit(pom.xml)"
+    ],
+
+    "deny": [
+      "Edit(../beast3/**)",
+      "Bash(JAVA_HOME=:*)",
+      "Bash(git add -A:*)",
+      "Bash(git commit -a:*)",
+      "Bash(git push --force:*)",
+      "Bash(mvn deploy:*)",
+      "Bash(rm -rf:*)",
+      "Read(~/.m2/settings.xml)",
+      "Read(~/.ssh/**)"
+    ]
+  }
+}
