@@ -36,7 +36,7 @@ The rates are as follows:
    worked examples with expected transition probabilities, and the invariants that must hold.
    That spec is the plan.
 
-5m plan
+5min
 
 
 ## Implementation
@@ -63,22 +63,20 @@ We now test the model.
 5min
 
 
+# Docs
+
+/goal Set up GitHub pages and publish a one-pager with a model description and instructions on how to use the model.
+
+Update the @README.md . Make it less generic and add a link to the website.
+
+2min
+
+
 # PR
 
 Create a PR for the changes compared to main. Create a description outlining the model and the
 code changes, including the design decisions you raised with me and how we resolved them.
 
 Stage paths explicitly — don't commit `plan/` or the IDE files.
-
-2min
-
-
-# Docs
-
-/goal Set up GitHub pages and publish a one-pager with a model description and instructions on how to use the model.
-
-3min
-
-Update the @README.md . Make it less generic and add a link to the website.
 
 2min
