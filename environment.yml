@@ -1,0 +1,4 @@
+name: fancy-beast-package
+channels:
+  - conda-forge
+dependencies: []
